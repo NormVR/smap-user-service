@@ -4,6 +4,7 @@ import (
 	grpcApp "user-service/internal/app/grpc"
 	"user-service/internal/config"
 	userService "user-service/internal/services/user"
+	"user-service/internal/storage/postgres"
 )
 
 type App struct {
@@ -11,7 +12,12 @@ type App struct {
 }
 
 func New(config *config.Config) *App {
-	service := userService.New()
+	dbStorage, err := postgres.New(config.PostgresDsn)
+	if err != nil {
+		panic(err)
+	}
+
+	service := userService.New(dbStorage)
 	app := grpcApp.New(service, config.GrpcPort)
 	return &App{
 		GrpcSrv: app,

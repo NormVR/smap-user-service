@@ -1,27 +1,46 @@
 package user
 
 import (
-	"user-service/internal/models/user"
+	"context"
+	"user-service/internal/domain/models"
 )
 
 type UserService struct {
+	dbStorage dbStorage
 }
 
-func New() *UserService {
-	return &UserService{}
-
+type dbStorage interface {
+	GetUser(ctx context.Context, id int64) (*models.User, error)
+	UpdateUser(ctx context.Context, user *models.User) error
 }
 
-func (s *UserService) GetUser(id int64) (*user.User, error) {
-	return &user.User{
-		Id:        1,
-		Email:     "test@test.com",
-		Username:  "Test Username",
-		Firstname: "Test Firstname",
-		Lastname:  "Test Lastname",
+func New(dbStorage dbStorage) *UserService {
+	return &UserService{
+		dbStorage: dbStorage,
+	}
+}
+
+func (s *UserService) GetUser(ctx context.Context, id int64) (*models.User, error) {
+	userData, err := s.dbStorage.GetUser(ctx, id)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &models.User{
+		Id:        userData.Id,
+		Email:     userData.Email,
+		Username:  userData.Username,
+		Firstname: userData.Firstname,
+		Lastname:  userData.Lastname,
 	}, nil
 }
 
-func (s *UserService) UpdateUser(user *user.User) error {
+func (s *UserService) UpdateUser(ctx context.Context, user *models.User) error {
+	err := s.dbStorage.UpdateUser(ctx, user)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
