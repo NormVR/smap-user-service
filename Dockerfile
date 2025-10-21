@@ -11,6 +11,8 @@ COPY go.mod go.sum ./
 
 RUN go mod download
 
+RUN go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest
+
 COPY . .
 
 RUN CGO_ENABLED=1 \
@@ -31,6 +33,10 @@ RUN apk add --no-cache \
 
 COPY --from=builder /app/user-service .
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+COPY --from=builder /go/bin/migrate /usr/local/bin/migrate
+COPY --from=builder /app/migrations ./migrations
+
+RUN migrate -version
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD grpc_health_probe -addr=:50052 -tls=false || exit 1
