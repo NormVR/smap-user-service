@@ -3,6 +3,8 @@ package user
 import (
 	"context"
 	"user-service/internal/domain/models"
+
+	"github.com/google/uuid"
 )
 
 type UserService struct {
@@ -10,7 +12,7 @@ type UserService struct {
 }
 
 type dbStorage interface {
-	GetUser(ctx context.Context, id int64) (*models.User, error)
+	GetUser(ctx context.Context, id uuid.UUID) (*models.User, error)
 	UpdateUser(ctx context.Context, user *models.User) error
 }
 
@@ -20,20 +22,14 @@ func New(dbStorage dbStorage) *UserService {
 	}
 }
 
-func (s *UserService) GetUser(ctx context.Context, id int64) (*models.User, error) {
+func (s *UserService) GetUser(ctx context.Context, id uuid.UUID) (*models.User, error) {
 	userData, err := s.dbStorage.GetUser(ctx, id)
 
 	if err != nil {
 		return nil, err
 	}
 
-	return &models.User{
-		Id:        userData.Id,
-		Email:     userData.Email,
-		Username:  userData.Username,
-		Firstname: userData.Firstname,
-		Lastname:  userData.Lastname,
-	}, nil
+	return userData, nil
 }
 
 func (s *UserService) UpdateUser(ctx context.Context, user *models.User) error {

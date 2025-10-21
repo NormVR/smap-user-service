@@ -5,9 +5,11 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"strconv"
 	domainErrors "user-service/internal/domain/errors"
 	"user-service/internal/domain/models"
 
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
@@ -32,41 +34,95 @@ func (s *Storage) Close(ctx context.Context) {
 	s.db.Close(ctx)
 }
 
-func (s *Storage) GetUser(ctx context.Context, id int64) (*models.User, error) {
+func (s *Storage) GetUser(ctx context.Context, id uuid.UUID) (*models.User, error) {
 	var user models.User
-	err := s.db.QueryRow(ctx, `SELECT id, email, username, firstname, lastname FROM users WHERE id=$1`, id).Scan(
+	err := s.db.QueryRow(ctx, `SELECT 
+    id, 
+    firstname, 
+    lastname,
+    avatar_url,
+	website,
+	location,
+	birth_date,
+	gender,
+	telephone
+FROM user_profiles WHERE id=$1`, id).Scan(
 		&user.Id,
-		&user.Email,
 		&user.Username,
 		&user.Firstname,
 		&user.Lastname,
+		&user.AvatarUrl,
+		&user.Website,
+		&user.Location,
+		&user.BirthDate,
+		&user.Gender,
+		&user.Telephone,
 	)
 
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, domainErrors.ErrUserNotFound
 		}
-		return nil, fmt.Errorf("failed to get user: %w", err)
+		return nil, fmt.Errorf("failed to load user from DB: %w", err)
 	}
 
 	return &user, nil
 }
 
 func (s *Storage) UpdateUser(ctx context.Context, user *models.User) error {
-
-	res, err := s.db.Exec(ctx,
-		`UPDATE users SET firstname=$1, lastname=$2 WHERE id=$3`,
-		user.Firstname,
-		user.Lastname,
-		user.Id,
-	)
-
+	tx, err := s.db.Begin(ctx)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to start transaction: %w", err)
 	}
 
-	if res.RowsAffected() == 0 {
-		return domainErrors.ErrUserNotFound
+	defer tx.Rollback(ctx)
+
+	var exists bool
+	err = tx.QueryRow(ctx, `SELECT EXISTS (SELECT 1 FROM user_profiles WHERE id=$1)`, user.Id).Scan(&exists)
+
+	if err != nil {
+		return fmt.Errorf("failed to check if user exists: %w", err)
+	}
+
+	if !exists {
+		return fmt.Errorf("user does not exist")
+	}
+
+	query := `UPDATE user_profiles SET`
+	args := []interface{}{}
+	paramCount := 1
+
+	updateFields := map[string]interface{}{
+		"firstname":  user.Firstname,
+		"lastname":   user.Lastname,
+		"avatar_url": user.AvatarUrl,
+		"website":    user.Website,
+		"location":   user.Location,
+		"bio":        user.Bio,
+		"birthdate":  user.BirthDate,
+		"gender":     user.Gender,
+		"telephone":  user.Telephone,
+	}
+
+	for fieldName, fieldValue := range updateFields {
+		if fieldValue != nil {
+			query += fmt.Sprintf(" %s = $%d", fieldName, paramCount)
+			args = append(args, fieldValue)
+			paramCount++
+		}
+	}
+
+	query += " WHERE id = $" + strconv.Itoa(paramCount)
+	args = append(args, user.Id)
+
+	_, err = tx.Exec(ctx, query, args...)
+	if err != nil {
+		return fmt.Errorf("failed to update user: %w", err)
+	}
+
+	err = tx.Commit(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to commit transaction: %w", err)
 	}
 
 	return nil

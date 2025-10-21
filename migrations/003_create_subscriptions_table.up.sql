@@ -13,8 +13,8 @@ CREATE TABLE IF NOT EXISTS subscriptions (
     UNIQUE(follower_id, following_id),
 
     -- Внешние ключи
-    CONSTRAINT fk_follower FOREIGN KEY (follower_id) REFERENCES users_profile(id) ON DELETE CASCADE,
-    CONSTRAINT fk_following FOREIGN KEY (following_id) REFERENCES users_profile(id) ON DELETE CASCADE
+    CONSTRAINT fk_follower FOREIGN KEY (follower_id) REFERENCES users(id) ON DELETE CASCADE,
+    CONSTRAINT fk_following FOREIGN KEY (following_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 -- Индексы для быстрого доступа к подпискам

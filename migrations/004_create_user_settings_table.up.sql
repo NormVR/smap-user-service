@@ -17,5 +17,5 @@ CREATE TABLE IF NOT EXISTS user_settings (
     login_alerts BOOLEAN DEFAULT true,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
 
-    CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES users_profile(id) ON DELETE CASCADE
+    CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );

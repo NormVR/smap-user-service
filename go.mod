@@ -3,7 +3,8 @@ module user-service
 go 1.25.0
 
 require (
-	github.com/NormVR/smap_protobuf v0.2.0
+	github.com/NormVR/smap_protobuf v0.2.4
+	github.com/google/uuid v1.6.0
 	github.com/jackc/pgx/v5 v5.7.6
 	google.golang.org/grpc v1.76.0
 	google.golang.org/protobuf v1.36.6
