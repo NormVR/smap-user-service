@@ -22,7 +22,7 @@ RUN CGO_ENABLED=1 \
     go build -ldflags="-linkmode external -extldflags '-static' -w -s" \
     -tags musl \
     -trimpath \
-    -o user-service cmd/grpc/main.go
+    -o user-service cmd/main.go
 
 FROM alpine:3.20
 WORKDIR /app/

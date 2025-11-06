@@ -14,6 +14,7 @@ type UserService struct {
 type dbStorage interface {
 	GetUser(ctx context.Context, id uuid.UUID) (*models.User, error)
 	UpdateUser(ctx context.Context, user *models.User) error
+	CreateUser(ctx context.Context, user *models.User) error
 }
 
 func New(dbStorage dbStorage) *UserService {
@@ -34,6 +35,16 @@ func (s *UserService) GetUser(ctx context.Context, id uuid.UUID) (*models.User, 
 
 func (s *UserService) UpdateUser(ctx context.Context, user *models.User) error {
 	err := s.dbStorage.UpdateUser(ctx, user)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *UserService) CreateUser(ctx context.Context, user *models.User) error {
+	err := s.dbStorage.CreateUser(ctx, user)
+
 	if err != nil {
 		return err
 	}

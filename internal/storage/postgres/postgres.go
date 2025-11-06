@@ -34,6 +34,38 @@ func (s *Storage) Close(ctx context.Context) {
 	s.db.Close(ctx)
 }
 
+func (s *Storage) CreateUser(ctx context.Context, user *models.User) error {
+
+	_, err := s.GetUser(ctx, user.Id)
+
+	if err == nil {
+		return nil
+	}
+
+	if !errors.Is(err, domainErrors.ErrUserNotFound) {
+		return fmt.Errorf("could not load user to check existance before create: %w", err)
+	}
+
+	tx, err := s.db.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to start transaction: %w", err)
+	}
+
+	defer tx.Rollback(ctx)
+
+	_, err = tx.Exec(ctx, `INSERT INTO user_profiles (id, username) VALUES ($1, $2)`, user.Id, user.Username)
+
+	if err != nil {
+		return fmt.Errorf("failed to create user: %w", err)
+	}
+
+	if err = tx.Commit(ctx); err != nil {
+		return fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	return nil
+}
+
 func (s *Storage) GetUser(ctx context.Context, id uuid.UUID) (*models.User, error) {
 	var user models.User
 	err := s.db.QueryRow(ctx, `SELECT 
